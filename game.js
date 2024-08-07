@@ -14,12 +14,15 @@ const ball = {
     radius: 15,
     dx: 0,
     dy: 0,
-    gravity: 0.5,
-    friction: 0.99,
+    mass: 10, 
+    gravity: 0.5, 
+    friction: 0.8, 
     dragging: false
 };
 
-let startX, startY;
+let startX, startY, endX, endY;
+let score = 0;
+const maxDragDistance = 100; 
 
 function drawBasket() {
     ctx.fillStyle = 'orange';
@@ -34,25 +37,33 @@ function drawBall() {
     ctx.closePath();
 }
 
+function drawScore() {
+    ctx.font = '24px Arial';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`Score: ${score}`, 10, 10);
+}
+
 function updateBall() {
     if (!ball.dragging) {
         ball.dy += ball.gravity;
         ball.x += ball.dx;
         ball.y += ball.dy;
 
-        // Bounce off the floor
+        
         if (ball.y + ball.radius > canvas.height) {
             ball.y = canvas.height - ball.radius;
             ball.dy *= -ball.friction;
         }
 
-        // Bounce off the ceiling
+        
         if (ball.y - ball.radius < 0) {
             ball.y = ball.radius;
             ball.dy *= -ball.friction;
         }
 
-        // Bounce off the walls
+        
         if (ball.x + ball.radius > canvas.width) {
             ball.x = canvas.width - ball.radius;
             ball.dx *= -ball.friction;
@@ -68,9 +79,21 @@ function checkScore() {
     if (
         ball.x + ball.radius > basket.x &&
         ball.x - ball.radius < basket.x + basket.width &&
-        ball.y + ball.radius > basket.y &&
-        ball.y - ball.radius < basket.y + basket.height
+        ball.y - ball.radius < basket.y
     ) {
+        score++;
+        alert('Score!');
+        resetBall();
+    }
+
+    if (
+        ball.x + ball.radius > basket.x &&
+        ball.x - ball.radius < basket.x + basket.width &&
+        ball.y + ball.radius > basket.y &&
+        ball.y - ball.radius < basket.y + basket.height &&
+        ball.y - ball.radius < basket.y
+    ) {
+        score++;
         alert('Score!');
         resetBall();
     }
@@ -88,6 +111,7 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBasket();
     drawBall();
+    drawScore();
     updateBall();
     checkScore();
     requestAnimationFrame(draw);
@@ -106,22 +130,34 @@ function startDrag(e) {
 function drag(e) {
     if (ball.dragging) {
         const rect = canvas.getBoundingClientRect();
-        const currentX = e.clientX - rect.left;
-        const currentY = e.clientY - rect.top;
+        endX = e.clientX - rect.left;
+        endY = e.clientY - rect.top;
 
-        ball.x = currentX;
-        ball.y = currentY;
+        
+        const dragDistance = Math.hypot(endX - startX, endY - startY);
+
+        
+        if (dragDistance > maxDragDistance) {
+            const ratio = maxDragDistance / dragDistance;
+            endX = startX + (endX - startX) * ratio;
+            endY = startY + (endY - startY) * ratio;
+        }
+
+        
+        ball.x = endX;
+        ball.y = endY;
     }
 }
 
 function endDrag(e) {
     if (ball.dragging) {
         const rect = canvas.getBoundingClientRect();
-        const endX = e.clientX - rect.left;
-        const endY = e.clientY - rect.top;
+        endX = e.clientX - rect.left;
+        endY = e.clientY - rect.top;
 
-        ball.dx = (startX - endX) * 0.5;
-        ball.dy = (startY - endY) * 0.5;
+        
+        ball.dx = (startX - endX) * 0.2; 
+        ball.dy = (startY - endY) * 0.2; 
 
         ball.dragging = false;
         updateBall();
